@@ -26,16 +26,16 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Tableau de bord", href: "/dashboard", icon: LayoutGrid },
+  { label: "Tableau de bord", href: "/", icon: LayoutGrid },
   { label: "Sites", href: "/sites", icon: MapPin },
   { label: "Maintenance", href: "/maintenance", icon: Wrench },
   { label: "Interventions", href: "/interventions", icon: ClipboardList },
   { label: "Inventaire", href: "/inventaire", icon: Package },
-  { label: "Stats zones", href: "/stats-zones", icon: BarChart3 },
-  { label: "Performance", href: "/performance", icon: Gauge },
+  { label: "Stats zones", href: "/statistiques-zones", icon: BarChart3 },
+  { label: "Performance", href: "/tableau-performance", icon: Gauge },
   { label: "Rapports", href: "/rapports", icon: FileText },
   { label: "Alertes", href: "/alertes", icon: Bell },
-  { label: "Configuration", href: "/configuration", icon: SlidersHorizontal },
+  { label: "Configuration", href: "/configuration-systeme", icon: SlidersHorizontal },
   { label: "Paramètres", href: "/parametres", icon: Settings },
 ];
 
