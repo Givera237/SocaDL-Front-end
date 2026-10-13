@@ -1,12 +1,8 @@
 // lib/api-client.ts
+// lib/api-client.ts
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/v1";
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
+// Mettez le port exact sur lequel NestJS tourne (ex: 3001)
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 export const apiClient = {
   async get<T>(endpoint: string, params?: Record<string, any>): Promise<T> {
@@ -19,35 +15,30 @@ export const apiClient = {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        // Décommentez la ligne suivante si votre API nécessite un token JWT
-        // "Authorization": `Bearer ${localStorage.getItem('token')}`,
       },
-      cache: "no-store", // Empêche le cache Next.js pour avoir des données temps réel
+      cache: "no-store",
     });
 
     if (!response.ok) {
       throw new Error(`Erreur API sur ${endpoint}: ${response.status} ${response.statusText}`);
     }
 
-    const result: ApiResponse<T> = await response.json();
-    return result.data;
+    const result = await response.json();
+    // Si NestJS renvoie directement le tableau / objet, on le retourne.
+    // S'il est enveloppé dans un Interceptor { success, data }, on retourne result.data.
+    return result.data !== undefined ? result.data : result;
   },
 
   async post<T>(endpoint: string, body: any): Promise<T> {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      throw new Error(`Erreur API sur ${endpoint}: ${response.status}`);
-    }
-
-    const result: ApiResponse<T> = await response.json();
-    return result.data;
+    if (!response.ok) throw new Error(`Erreur API sur ${endpoint}: ${response.status}`);
+    const result = await response.json();
+    return result.data !== undefined ? result.data : result;
   },
 
   async put<T>(endpoint: string, body: any): Promise<T> {
@@ -56,13 +47,16 @@ export const apiClient = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+
     if (!response.ok) throw new Error(`Erreur API: ${response.status}`);
-    return (await response.json()).data;
+    const result = await response.json();
+    return result.data !== undefined ? result.data : result;
   },
 
   async delete<T>(endpoint: string): Promise<T> {
     const response = await fetch(`${BASE_URL}${endpoint}`, { method: "DELETE" });
     if (!response.ok) throw new Error(`Erreur API: ${response.status}`);
-    return (await response.json()).data;
+    const result = await response.json();
+    return result.data !== undefined ? result.data : result;
   },
 };

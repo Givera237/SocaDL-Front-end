@@ -4,8 +4,8 @@ import { apiClient } from "@/lib/api-client";
 // ==========================================
 // TYPES (Calqués sur vos interfaces existantes)
 // ==========================================
+export type SiteStatus = "online" | "offline" | "maintenance" | "warning";
 
-export type SiteStatus = "online" | "offline" | "maintenance";
 export interface SiteRow {
   id: string;
   name: string;
@@ -16,43 +16,62 @@ export interface SiteRow {
   frequencyHz: number;
   status: SiteStatus;
   lastCommDays: number;
+  equipments?: any[];
+  interventions?: any[];
 }
 
 export type EquipmentStatus = "operational" | "maintenance";
+
 export interface Equipment {
   id: string;
   name: string;
   model: string;
-  site: string;
   type: string;
-  installDate: string; // Format: "DD/MM/YYYY" ou ISO
+  installDate: string; // Format ISO string depuis PostgreSQL
   age: number;         // en années
   lifespan: number;    // en années
   status: EquipmentStatus;
+  siteId?: string;
+  // Prisma inclut le site sous forme d'objet
+  site?: {
+    id: string;
+    name: string;
+    code?: string;
+  };
 }
-
 export type InterventionStatus = "open" | "in-progress" | "resolved" | "closed";
+
 export interface InterventionTicket {
   id: string;
-  siteName: string;
-  eventDate: string;
+  siteId?: string;
+  siteName?: string;
+  site?: {
+    id: string;
+    name: string;
+  };
+  eventDate?: string;
   createdAt: string;
   technician: string;
   problem: string;
   actions?: string;
   parts?: string;
   status: InterventionStatus;
-  duration: string;
+  duration?: string;
 }
-
 export type AlertCriterion = "THD" | "Tension" | "Fréquence" | "Puissance" | "Courant";
 export type AlertScope = "global" | "site";
 export type NotificationChannel = "SMS" | "Email" | "Console";
+
 export interface AlertRule {
   id: string;
   criterion: AlertCriterion;
   scope: AlertScope;
   siteName?: string;
+  siteId?: string;
+  site?: {
+    id: string;
+    name: string;
+  };
   minThreshold: number;
   maxThreshold: number;
   unit: string;
@@ -61,16 +80,15 @@ export interface AlertRule {
   enabled: boolean;
   priority?: boolean;
 }
-
 export interface ZoneStats {
   id: string;
   name: string;
   sites: number;
   subscribers: number;
   outages: number;
-  saidi: number;   // min/abonné
-  saifi: number;   // interruptions/abonné
-  caidi: number;   // min/interruption
+  saidi: number; // min/abonné
+  saifi: number; // interruptions/abonné
+  caidi: number; // min/interruption
 }
 
 export interface EvolutionData {
@@ -101,6 +119,55 @@ export interface User {
   role: UserRole;
 }
 
+
+
+export type MaintenancePriority = "haute" | "moyenne" | "basse";
+export type MaintenanceStatus = "planifiee" | "en-cours" | "terminee" | "open" | "in-progress" | "resolved" | "closed";
+export type MaintenanceType = "preventive" | "corrective" | "inspection" | "calibration";
+
+export interface MaintenanceIntervention {
+  id: string;
+  title?: string;
+  problem?: string;
+  priority?: MaintenancePriority;
+  location?: string;
+  siteName?: string;
+  site?: {
+    id: string;
+    name: string;
+  };
+  type?: MaintenanceType;
+  technician: string;
+  plannedDate?: string;
+  realizedDate?: string;
+  createdAt?: string;
+  eventDate?: string;
+  description?: string;
+  actions?: string;
+  parts?: string;
+  status: MaintenanceStatus;
+}
+
+
+// services/index.ts
+
+export interface ZoneReport {
+  id: string;
+  name: string;
+  sites: number;
+  subscribers: number;
+  outages: number;
+  saidi: number;
+  saifi: number;
+  caidi: number;
+}
+
+export interface EvolutionData {
+  date: string;
+  saidi: number;
+  saifi: number;
+}
+
 // ==========================================
 // FONCTIONS D'APPEL API
 // ==========================================
@@ -111,15 +178,10 @@ export const api = {
     apiClient.get<any>("/dashboard/summary", { period, zone }),
 
   // 2. Sites
-  getSites: () => apiClient.get<SiteRow[]>("/sites"),
+ getSites: () => apiClient.get<SiteRow[]>("/sites"),
 
   // 3. Inventaire
-  getEquipment: () => apiClient.get<Equipment[]>("/equipment"),
-
-  // 4. Fiches d'interventions
-  getInterventions: () => apiClient.get<InterventionTicket[]>("/interventions"),
-  updateIntervention: (id: string, data: Partial<InterventionTicket>) => 
-    apiClient.put<InterventionTicket>(`/interventions/${id}`, data),
+  getEquipment: () => apiClient.get<Equipment[]>("/equipments"),
 
   // 5. Alertes
   getAlertRules: () => apiClient.get<AlertRule[]>("/alert-rules"),
@@ -127,8 +189,9 @@ export const api = {
     apiClient.put<AlertRule>(`/alert-rules/${id}`, data),
 
   // 6. Rapports & Statistiques Zones
-  getZoneStats: (period: string = "30d") => 
-    apiClient.get<ZoneStats[]>("/zones/stats", { period }),
+  // 6. Rapports & Statistiques Zones
+  getZoneStats: (period: string = "30d") =>
+    apiClient.get<ZoneStats[]>("/reports/zones/stats", { period }),
   getEvolutionData: (period: string = "30d", zoneId?: string) => 
     apiClient.get<EvolutionData[]>("/reports/evolution", { period, zoneId }),
 
@@ -146,4 +209,23 @@ export const api = {
   getSystemConfig: () => apiClient.get<{ detectionDelayMinutes: number }>("/config/system"),
   updateSystemConfig: (data: { detectionDelayMinutes: number }) => 
     apiClient.put("/config/system", data),
+
+  // 4. Interventions & Maintenance
+  getInterventions: () => apiClient.get<MaintenanceIntervention[]>("/interventions"),
+
+  updateIntervention: (id: string, data: Partial<MaintenanceIntervention>) =>
+    apiClient.put<MaintenanceIntervention>(`/interventions/${id}`, data),
+
+  deleteIntervention: (id: string) =>
+    apiClient.delete<void>(`/interventions/${id}`),
+
+
+   // 6. Rapports
+  getZoneStats: (period: string = "30d") =>
+    apiClient.get<ZoneReport[]>("/reports/zones/stats", { period }),
+
+  getEvolutionData: (period: string = "30d", zoneId?: string) =>
+    apiClient.get<EvolutionData[]>("/reports/evolution", { period, zoneId }),
+
+
 };

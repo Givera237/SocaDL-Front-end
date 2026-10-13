@@ -1,7 +1,6 @@
-// app/(dashboard)/rapports/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/header";
 import { PeriodFilter, type Period } from "@/components/dashboard/period-filter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,150 +30,67 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { FileDown, FileText, ArrowDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-// Types
-interface ZoneReport {
-  id: string;
-  name: string;
-  sites: number;
-  subscribers: number;
-  outages: number;
-  saidi: number;
-  saifi: number;
-  caidi: number;
-}
-
-interface EvolutionData {
-  date: string;
-  saidi: number;
-  saifi: number;
-}
-
-// Données mockées
-const MOCK_ZONES: ZoneReport[] = [
-  {
-    id: "1",
-    name: "Adamaoua",
-    sites: 1,
-    subscribers: 4100,
-    outages: 0,
-    saidi: 0.0,
-    saifi: 0.0,
-    caidi: 0.0,
-  },
-  {
-    id: "2",
-    name: "Extrême-Nord",
-    sites: 1,
-    subscribers: 3800,
-    outages: 0,
-    saidi: 0.0,
-    saifi: 0.0,
-    caidi: 0.0,
-  },
-  {
-    id: "3",
-    name: "Sud",
-    sites: 1,
-    subscribers: 3100,
-    outages: 0,
-    saidi: 0.0,
-    saifi: 0.0,
-    caidi: 0.0,
-  },
-  {
-    id: "4",
-    name: "Yaoundé",
-    sites: 3,
-    subscribers: 22800,
-    outages: 0,
-    saidi: 0.0,
-    saifi: 0.0,
-    caidi: 0.0,
-  },
-  {
-    id: "5",
-    name: "Nord",
-    sites: 1,
-    subscribers: 4300,
-    outages: 0,
-    saidi: 0.0,
-    saifi: 0.0,
-    caidi: 0.0,
-  },
-  {
-    id: "6",
-    name: "Douala",
-    sites: 3,
-    subscribers: 29000,
-    outages: 0,
-    saidi: 0.0,
-    saifi: 0.0,
-    caidi: 0.0,
-  },
-  {
-    id: "7",
-    name: "Nord-Ouest",
-    sites: 1,
-    subscribers: 5200,
-    outages: 0,
-    saidi: 0.0,
-    saifi: 0.0,
-    caidi: 0.0,
-  },
-  {
-    id: "8",
-    name: "Ouest",
-    sites: 1,
-    subscribers: 6500,
-    outages: 0,
-    saidi: 0.0,
-    saifi: 0.0,
-    caidi: 0.0,
-  },
-];
-
-// Données d'évolution mockées (30 jours)
-const MOCK_EVOLUTION: EvolutionData[] = [
-  { date: "20/08", saidi: 0.0, saifi: 0.0 },
-  { date: "22/08", saidi: 0.0, saifi: 0.0 },
-  { date: "24/08", saidi: 0.0, saifi: 0.0 },
-  { date: "26/08", saidi: 0.0, saifi: 0.0 },
-  { date: "28/08", saidi: 0.0, saifi: 0.0 },
-  { date: "30/08", saidi: 0.0, saifi: 0.0 },
-  { date: "01/09", saidi: 0.0, saifi: 0.0 },
-  { date: "03/09", saidi: 0.0, saifi: 0.0 },
-  { date: "05/09", saidi: 0.0, saifi: 0.0 },
-  { date: "07/09", saidi: 0.0, saifi: 0.0 },
-  { date: "09/09", saidi: 0.0, saifi: 0.0 },
-  { date: "11/09", saidi: 0.0, saifi: 0.0 },
-  { date: "13/09", saidi: 0.0, saifi: 0.0 },
-  { date: "15/09", saidi: 0.0, saifi: 0.0 },
-  { date: "17/09", saidi: 0.0, saifi: 0.0 },
-  { date: "19/09", saidi: 0.0, saifi: 0.0 },
-];
+import { FileDown, FileText, ArrowDown, Loader2 } from "lucide-react";
+import { api, ZoneReport, EvolutionData } from "@/services";
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>("30d");
   const [zoneFilter, setZoneFilter] = useState("all");
-  const [zones] = useState<ZoneReport[]>(MOCK_ZONES);
-  const [evolution] = useState<EvolutionData[]>(MOCK_EVOLUTION);
+  const [zones, setZones] = useState<ZoneReport[]>([]);
+  const [evolution, setEvolution] = useState<EvolutionData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Calculer les totaux/moyennes
+  // Recharger les données réelles à chaque changement de période ou de filtre
+  useEffect(() => {
+    async function fetchReportsData() {
+      try {
+        setLoading(true);
+        const [zonesData, evolutionData] = await Promise.all([
+          api.getZoneStats(period),
+          api.getEvolutionData(period, zoneFilter === "all" ? undefined : zoneFilter),
+        ]);
+
+        setZones(zonesData ?? []);
+        setEvolution(evolutionData ?? []);
+      } catch (err: any) {
+        console.error("Erreur de chargement des rapports :", err);
+        setError("Impossible de charger les indicateurs IEEE 1366.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchReportsData();
+  }, [period, zoneFilter]);
+
+  // Calculer les totaux/moyennes dynamiquement sur les données BDD
   const totalSAIDI = zones.reduce((sum, z) => sum + z.saidi, 0);
   const totalSAIFI = zones.reduce((sum, z) => sum + z.saifi, 0);
-  const totalCAIDI = zones.reduce((sum, z) => sum + z.caidi, 0);
+  const totalCAIDI = zones.length > 0 ? zones.reduce((sum, z) => sum + z.caidi, 0) / zones.length : 0;
 
   const handleExportCSV = () => {
-    // TODO: Implémenter l'export CSV
-    console.log("Export CSV clicked");
+    // Génération CSV à partir de `zones`
+    const headers = "Zone,Sites,Abonnes,Coupures,SAIDI,SAIFI,CAIDI\n";
+    const rows = zones
+      .map(
+        (z) =>
+          `"${z.name}",${z.sites},${z.subscribers},${z.outages},${z.saidi},${z.saifi},${z.caidi}`
+      )
+      .join("\n");
+
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `rapport_ieee1366_${period}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleExportPDF = () => {
-    // TODO: Implémenter l'export PDF
-    console.log("Export PDF clicked");
+    window.print();
   };
 
   return (
@@ -204,9 +120,9 @@ export default function ReportsPage() {
       />
 
       {/* Filtres */}
-      <div className="mb-6 flex items-center gap-4">
+      <div className="mb-6 flex items-center gap-4 flex-wrap">
         <PeriodFilter value={period} onChange={setPeriod} />
-        
+
         <Select value={zoneFilter} onValueChange={setZoneFilter}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Toutes les zones" />
@@ -222,172 +138,181 @@ export default function ReportsPage() {
         </Select>
       </div>
 
-      {/* 3 cartes KPI */}
-      <div className="grid gap-4 md:grid-cols-3 mb-6">
-        {/* SAIDI */}
-        <Card className="border-[#E8E2D8]">
-          <CardContent className="p-6">
-            <div className="text-xs text-[#8A8478] mb-2">SAIDI</div>
-            <div className="text-3xl font-bold text-[#F2751F] font-[JetBrains Mono] mb-1">
-              {totalSAIDI.toFixed(2)}
-            </div>
-            <div className="text-sm text-[#8A8478]">min / abonné</div>
-          </CardContent>
-        </Card>
+      {loading ? (
+        <div className="flex items-center justify-center p-12 bg-white border border-[#E8E2D8] rounded-xl">
+          <Loader2 className="w-6 h-6 animate-spin text-[#F2751F] mr-2" />
+          <span className="text-[#8A8478]">Calcul des indicateurs réglementaires...</span>
+        </div>
+      ) : error ? (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl">
+          {error}
+        </div>
+      ) : (
+        <>
+          {/* 3 cartes KPI */}
+          <div className="grid gap-4 md:grid-cols-3 mb-6">
+            <Card className="border-[#E8E2D8]">
+              <CardContent className="p-6">
+                <div className="text-xs text-[#8A8478] mb-2">SAIDI</div>
+                <div className="text-3xl font-bold text-[#F2751F] font-[JetBrains Mono] mb-1">
+                  {totalSAIDI.toFixed(2)}
+                </div>
+                <div className="text-sm text-[#8A8478]">min / abonné</div>
+              </CardContent>
+            </Card>
 
-        {/* SAIFI */}
-        <Card className="border-[#E8E2D8]">
-          <CardContent className="p-6">
-            <div className="text-xs text-[#8A8478] mb-2">SAIFI</div>
-            <div className="text-3xl font-bold text-[#F2751F] font-[JetBrains Mono] mb-1">
-              {totalSAIFI.toFixed(3)}
-            </div>
-            <div className="text-sm text-[#8A8478]">interruptions / abonné</div>
-          </CardContent>
-        </Card>
+            <Card className="border-[#E8E2D8]">
+              <CardContent className="p-6">
+                <div className="text-xs text-[#8A8478] mb-2">SAIFI</div>
+                <div className="text-3xl font-bold text-[#F2751F] font-[JetBrains Mono] mb-1">
+                  {totalSAIFI.toFixed(3)}
+                </div>
+                <div className="text-sm text-[#8A8478]">interruptions / abonné</div>
+              </CardContent>
+            </Card>
 
-        {/* CAIDI */}
-        <Card className="border-[#E8E2D8]">
-          <CardContent className="p-6">
-            <div className="text-xs text-[#8A8478] mb-2">CAIDI</div>
-            <div className="text-3xl font-bold text-[#F2751F] font-[JetBrains Mono] mb-1">
-              {totalCAIDI.toFixed(2)}
-            </div>
-            <div className="text-sm text-[#8A8478]">min / interruption</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Graphique d'évolution */}
-      <Card className="border-[#E8E2D8] mb-6">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-[#1F2937] flex items-center gap-2">
-            <ArrowDown className="w-4 h-4 text-[#8A8478]" />
-            Évolution par période
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={evolution}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#E8E2D8"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="date"
-                  stroke="#9A9284"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="#9A9284"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={[0, 4]}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E8E2D8",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: "12px", paddingTop: "20px" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="saidi"
-                  stroke="#F2751F"
-                  strokeWidth={2}
-                  dot={false}
-                  name="SAIDI (min)"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="saifi"
-                  stroke="#16A34A"
-                  strokeWidth={2}
-                  dot={false}
-                  name="SAIFI"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <Card className="border-[#E8E2D8]">
+              <CardContent className="p-6">
+                <div className="text-xs text-[#8A8478] mb-2">CAIDI</div>
+                <div className="text-3xl font-bold text-[#F2751F] font-[JetBrains Mono] mb-1">
+                  {totalCAIDI.toFixed(2)}
+                </div>
+                <div className="text-sm text-[#8A8478]">min / interruption</div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Tableau de comparaison */}
-      <Card className="border-[#E8E2D8]">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-[#1F2937] flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#8A8478]" />
-            Comparaison par zone
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-[#FAF7F2] border-[#E8E2D8]">
-                <TableHead className="text-[#8A8478] font-medium">
-                  ZONE
-                </TableHead>
-                <TableHead className="text-[#8A8478] font-medium text-right">
-                  SITES
-                </TableHead>
-                <TableHead className="text-[#8A8478] font-medium text-right">
-                  ABONNÉS
-                </TableHead>
-                <TableHead className="text-[#8A8478] font-medium text-right">
-                  COUPURES
-                </TableHead>
-                <TableHead className="text-[#8A8478] font-medium text-right">
-                  SAIDI (MIN){" "}
-                  <ArrowDown className="w-3 h-3 inline ml-1" />
-                </TableHead>
-                <TableHead className="text-[#8A8478] font-medium text-right">
-                  SAIFI
-                </TableHead>
-                <TableHead className="text-[#8A8478] font-medium text-right">
-                  CAIDI (MIN)
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {zones.map((zone) => (
-                <TableRow key={zone.id} className="border-[#E8E2D8]">
-                  <TableCell className="font-medium text-[#1F2937]">
-                    {zone.name}
-                  </TableCell>
-                  <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
-                    {zone.sites}
-                  </TableCell>
-                  <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
-                    {zone.subscribers.toLocaleString("fr-FR")}
-                  </TableCell>
-                  <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
-                    {zone.outages}
-                  </TableCell>
-                  <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
-                    {zone.saidi.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
-                    {zone.saifi.toFixed(3)}
-                  </TableCell>
-                  <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
-                    {zone.caidi.toFixed(2)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+          {/* Graphique d'évolution */}
+          <Card className="border-[#E8E2D8] mb-6">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-[#1F2937] flex items-center gap-2">
+                <ArrowDown className="w-4 h-4 text-[#8A8478]" />
+                Évolution par période
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={evolution}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#E8E2D8"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#9A9284"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#9A9284"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E8E2D8",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: "12px", paddingTop: "20px" }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="saidi"
+                      stroke="#F2751F"
+                      strokeWidth={2}
+                      dot={false}
+                      name="SAIDI (min)"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="saifi"
+                      stroke="#16A34A"
+                      strokeWidth={2}
+                      dot={false}
+                      name="SAIFI"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tableau de comparaison */}
+          <Card className="border-[#E8E2D8]">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-[#1F2937] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#8A8478]" />
+                Comparaison par zone
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-[#FAF7F2] border-[#E8E2D8]">
+                    <TableHead className="text-[#8A8478] font-medium">
+                      ZONE
+                    </TableHead>
+                    <TableHead className="text-[#8A8478] font-medium text-right">
+                      SITES
+                    </TableHead>
+                    <TableHead className="text-[#8A8478] font-medium text-right">
+                      ABONNÉS
+                    </TableHead>
+                    <TableHead className="text-[#8A8478] font-medium text-right">
+                      COUPURES
+                    </TableHead>
+                    <TableHead className="text-[#8A8478] font-medium text-right">
+                      SAIDI (MIN){" "}
+                      <ArrowDown className="w-3 h-3 inline ml-1" />
+                    </TableHead>
+                    <TableHead className="text-[#8A8478] font-medium text-right">
+                      SAIFI
+                    </TableHead>
+                    <TableHead className="text-[#8A8478] font-medium text-right">
+                      CAIDI (MIN)
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {zones.map((zone) => (
+                    <TableRow key={zone.id} className="border-[#E8E2D8]">
+                      <TableCell className="font-medium text-[#1F2937]">
+                        {zone.name}
+                      </TableCell>
+                      <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
+                        {zone.sites}
+                      </TableCell>
+                      <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
+                        {zone.subscribers.toLocaleString("fr-FR")}
+                      </TableCell>
+                      <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
+                        {zone.outages}
+                      </TableCell>
+                      <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
+                        {zone.saidi.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
+                        {zone.saifi.toFixed(3)}
+                      </TableCell>
+                      <TableCell className="text-right font-[JetBrains Mono] text-sm text-[#1F2937]">
+                        {zone.caidi.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

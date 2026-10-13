@@ -1,82 +1,12 @@
 // app/(dashboard)/tableau-performance/page.tsx
 "use client";
 
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/header";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, TrendingUp, AlertCircle } from "lucide-react";
+import { CheckCircle2, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Types
-interface PerformanceIndicator {
-  label: string;
-  value: number;
-  unit: string;
-  target: number;
-  targetUnit: string;
-  targetPrefix?: string;
-  description: string;
-  status: "excellent" | "good" | "warning";
-  statusLabel: string;
-  progress: number; // pourcentage 0-100
-  isPercentage?: boolean; // si true, afficher en %
-  inverseProgress?: boolean; // si true, moins c'est mieux (SAIDI, SAIFI)
-}
-
-// Données mockées
-const PERFORMANCE_DATA: PerformanceIndicator[] = [
-  {
-    label: "SAIDI annuel",
-    value: 60.3,
-    unit: "min/abonné",
-    target: 1200,
-    targetUnit: "min/abonné",
-    targetPrefix: "≤",
-    description: "Durée cumulée de coupure par abonné",
-    status: "excellent",
-    statusLabel: "Excellent",
-    progress: 5, // 60.3/1200 = 5%
-    inverseProgress: true,
-  },
-  {
-    label: "SAIFI annuel",
-    value: 0.895,
-    unit: "int./abonné",
-    target: 10,
-    targetUnit: "int./abonné",
-    targetPrefix: "≤",
-    description: "Fréquence des interruptions par abonné",
-    status: "excellent",
-    statusLabel: "Excellent",
-    progress: 9, // 0.895/10 = 9%
-    inverseProgress: true,
-  },
-  {
-    label: "CAIDI",
-    value: 67.4,
-    unit: "min/int.",
-    target: 120,
-    targetUnit: "min/int.",
-    targetPrefix: "≤",
-    description: "Durée moyenne par interruption",
-    status: "good",
-    statusLabel: "Sur la bonne voie",
-    progress: 56, // 67.4/120 = 56%
-    inverseProgress: true,
-  },
-  {
-    label: "Disponibilité",
-    value: 99.989,
-    unit: "%",
-    target: 99.5,
-    targetUnit: "%",
-    targetPrefix: "≥",
-    description: "Taux de disponibilité du réseau",
-    status: "excellent",
-    statusLabel: "Objectif atteint",
-    progress: 100, // objectif dépassé
-    isPercentage: true,
-  },
-];
+import { api, PerformanceIndicator, PerformanceResponse } from "@/services";
 
 // Cercle de progression
 function CircularProgress({
@@ -88,36 +18,24 @@ function CircularProgress({
   targetUnit,
   targetPrefix,
   description,
-}: {
-  value: number;
-  progress: number;
-  label: string;
-  unit: string;
-  target: number;
-  targetUnit: string;
-  targetPrefix?: string;
-  description: string;
-}) {
+}: PerformanceIndicator) {
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
+  const strokeDashoffset = circumference - (Math.min(100, Math.max(0, progress)) / 100) * circumference;
 
-  // Couleur selon le statut
   const getStatusColor = () => {
-    if (progress >= 100) return "#16A34A"; // vert
-    if (progress >= 50) return "#16A34A"; // vert
-    if (progress >= 25) return "#F2751F"; // orange
-    return "#16A34A"; // vert (déjà excellent)
+    if (progress >= 100) return "#16A34A";
+    if (progress >= 50) return "#16A34A";
+    if (progress >= 25) return "#F2751F";
+    return "#16A34A";
   };
 
   const strokeColor = getStatusColor();
 
   return (
     <Card className="border-[#E8E2D8] flex flex-col items-center p-6">
-      {/* Cercle SVG */}
       <div className="relative w-32 h-32 mb-4">
         <svg className="w-full h-full transform -rotate-90">
-          {/* Cercle de fond */}
           <circle
             cx="64"
             cy="64"
@@ -126,7 +44,6 @@ function CircularProgress({
             stroke="#E8E2D8"
             strokeWidth="6"
           />
-          {/* Cercle de progression */}
           <circle
             cx="64"
             cy="64"
@@ -140,7 +57,6 @@ function CircularProgress({
             className="transition-all duration-1000 ease-out"
           />
         </svg>
-        {/* Valeur au centre */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-bold text-[#1F2937] font-[JetBrains Mono]">
             {value}
@@ -149,7 +65,6 @@ function CircularProgress({
         </div>
       </div>
 
-      {/* Label */}
       <div className="text-center">
         <h3 className="text-sm font-medium text-[#1F2937] mb-1">{label}</h3>
         <p className="text-xs text-[#8A8478] mb-1">{description}</p>
@@ -162,15 +77,10 @@ function CircularProgress({
 }
 
 // Barre de progression horizontale
-function ProgressBar({
-  indicator,
-}: {
-  indicator: PerformanceIndicator;
-}) {
+function ProgressBar({ indicator }: { indicator: PerformanceIndicator }) {
   const getStatusColor = () => {
     switch (indicator.status) {
       case "excellent":
-        return "bg-[#16A34A]";
       case "good":
         return "bg-[#16A34A]";
       case "warning":
@@ -193,7 +103,6 @@ function ProgressBar({
 
   return (
     <div className="space-y-2">
-      {/* En-tête */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-[#1F2937]">
@@ -223,14 +132,13 @@ function ProgressBar({
         </div>
       </div>
 
-      {/* Barre */}
       <div className="relative h-2 bg-[#E8E2D8] rounded-full overflow-hidden">
         <div
           className={cn(
             "absolute left-0 top-0 h-full rounded-full transition-all duration-500",
             getStatusColor()
           )}
-          style={{ width: `${indicator.progress}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, indicator.progress))}%` }}
         />
       </div>
     </div>
@@ -238,9 +146,55 @@ function ProgressBar({
 }
 
 export default function PerformanceTablePage() {
-  const ytdOutages = 9;
-  const totalMinutesClient = 4751420;
-  const globalScore = 75;
+  const [data, setData] = useState<PerformanceResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchPerformance() {
+      try {
+        setLoading(true);
+        const res = await api.getPerformance();
+        setData(res);
+      } catch (err: any) {
+        console.error("Erreur de chargement du tableau de performance :", err);
+        setError("Impossible de charger les métriques de performance.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPerformance();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <PageHeader
+          title="Tableau de performance"
+          subtitle="Indicateurs clés vs objectifs annuels 2026"
+        />
+        <div className="flex items-center justify-center p-12 bg-white border border-[#E8E2D8] rounded-xl">
+          <Loader2 className="w-6 h-6 animate-spin text-[#F2751F] mr-2" />
+          <span className="text-[#8A8478]">Chargement des performances réseau...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="p-6">
+        <PageHeader
+          title="Tableau de performance"
+          subtitle="Indicateurs clés vs objectifs annuels 2026"
+        />
+        <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl">
+          {error || "Données indisponibles"}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -249,9 +203,9 @@ export default function PerformanceTablePage() {
         subtitle="Indicateurs clés vs objectifs annuels 2026"
       />
 
-      {/* 4 cartes circulaires */}
+      {/* Cartes circulaires */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        {PERFORMANCE_DATA.map((indicator) => (
+        {data.indicators?.map((indicator) => (
           <CircularProgress key={indicator.label} {...indicator} />
         ))}
       </div>
@@ -265,14 +219,14 @@ export default function PerformanceTablePage() {
           </h2>
 
           <div className="space-y-6">
-            {PERFORMANCE_DATA.map((indicator) => (
+            {data.indicators?.map((indicator) => (
               <ProgressBar key={indicator.label} indicator={indicator} />
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* 3 cartes statistiques */}
+      {/* Cartes statistiques */}
       <div className="grid gap-4 md:grid-cols-3">
         {/* Coupures traitées */}
         <Card className="border-[#E8E2D8]">
@@ -281,7 +235,7 @@ export default function PerformanceTablePage() {
               COUPURES TRAITÉES (YTD)
             </div>
             <div className="text-2xl font-bold text-[#1F2937] font-[JetBrains Mono] mb-1">
-              {ytdOutages}
+              {data.ytdOutages ?? 0}
             </div>
             <div className="text-sm text-[#8A8478]">
               depuis le 01/01/2026
@@ -296,7 +250,7 @@ export default function PerformanceTablePage() {
               TOTAL MINUTES-CLIENT
             </div>
             <div className="text-2xl font-bold text-[#1F2937] font-[JetBrains Mono] mb-1">
-              {totalMinutesClient.toLocaleString("fr-FR")}
+              {(data.totalMinutesClient ?? 0).toLocaleString("fr-FR")}
             </div>
             <div className="text-sm text-[#8A8478]">
               minutes de coupure cumulées
@@ -311,7 +265,7 @@ export default function PerformanceTablePage() {
               SCORE GLOBAL
             </div>
             <div className="text-2xl font-bold text-[#1F2937] font-[JetBrains Mono] mb-1">
-              {globalScore}%
+              {data.globalScore ?? 0}%
             </div>
             <div className="text-sm text-[#8A8478]">
               objectifs atteints

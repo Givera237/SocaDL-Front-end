@@ -1,11 +1,11 @@
 // Destination dans le projet : components/dashboard/status-badge.tsx
-// Remplit le stub vide existant. Réutilisé par la page Sites (et, plus tard,
-// par toute autre page affichant un statut : Maintenance, Alertes, etc.)
+// Réutilisé par la page Sites et par la carte (components/dashboard/map-types.ts
+// définit le même type SiteStatus — gardez les deux synchronisés).
 
-import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type SiteStatus = "online" | "offline" | "warning";
+export type SiteStatus = "online" | "warning" | "offline" | "maintenance";
 
 const STATUS_CONFIG: Record<
   SiteStatus,
@@ -16,15 +16,20 @@ const STATUS_CONFIG: Record<
     icon: CheckCircle2,
     className: "bg-[#16A34A]/10 text-[#16A34A]",
   },
+  warning: {
+    label: "Avertissement",
+    icon: AlertCircle,
+    className: "bg-[#F2751F]/10 text-[#F2751F]",
+  },
   offline: {
     label: "En panne",
     icon: AlertTriangle,
     className: "bg-[#DC2626]/10 text-[#DC2626]",
   },
-  warning: {
-    label: "Avertissement",
-    icon: AlertCircle,
-    className: "bg-[#F2751F]/10 text-[#F2751F]",
+  maintenance: {
+    label: "Maintenance",
+    icon: Wrench,
+    className: "bg-[#6B7280]/10 text-[#6B7280]",
   },
 };
 

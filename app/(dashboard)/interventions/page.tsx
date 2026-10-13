@@ -1,10 +1,8 @@
-// app/(dashboard)/fiches-interventions/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -13,197 +11,38 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Calendar,
-  Clock,
   CheckCircle2,
   AlertCircle,
-  Wrench,
   Pencil,
   Trash2,
   Plus,
+  Loader2,
 } from "lucide-react";
-
-// Types
-type InterventionStatus = "open" | "in-progress" | "resolved" | "closed";
-
-interface InterventionTicket {
-  id: string;
-  siteName: string;
-  eventDate: string;
-  createdAt: string;
-  technician: string;
-  problem: string;
-  actions?: string;
-  parts?: string;
-  status: InterventionStatus;
-  duration: string;
-}
-
-// Données mockées
-const MOCK_TICKETS: InterventionTicket[] = [
-  {
-    id: "1",
-    siteName: "Poste Centre-Yaoundé",
-    eventDate: "04/08/2026",
-    createdAt: "07/08/2026 16:34",
-    technician: "Jean-Marc Bidjocka",
-    problem: "Coupure d'alimentation sur le transformateur principal",
-    status: "open",
-    duration: "0 min",
-  },
-  {
-    id: "2",
-    siteName: "Poste Bonanjo",
-    eventDate: "02/08/2026",
-    createdAt: "06/08/2026 16:34",
-    technician: "Marie Tchatcho",
-    problem: "Perte de communication avec le site",
-    status: "in-progress",
-    duration: "0 min",
-  },
-  {
-    id: "3",
-    siteName: "Poste Hippodrome",
-    eventDate: "03/08/2026",
-    createdAt: "06/08/2026 16:34",
-    technician: "Paul Etogo",
-    problem: "Tension anormalement basse signalée par les capteurs",
-    status: "open",
-    duration: "0 min",
-  },
-  {
-    id: "4",
-    siteName: "Poste Akwa",
-    eventDate: "07/08/2026",
-    createdAt: "05/08/2026 16:34",
-    technician: "Samuel Foka",
-    problem: "Surtension transitoire enregistrée",
-    status: "in-progress",
-    duration: "0 min",
-  },
-  {
-    id: "5",
-    siteName: "Centre Hospitalier Universitaire",
-    eventDate: "05/08/2026",
-    createdAt: "05/08/2026 16:34",
-    technician: "Abdoulaye Njoya",
-    problem: "Disjoncteur déclenché suite à surcharge",
-    status: "open",
-    duration: "0 min",
-  },
-  {
-    id: "6",
-    siteName: "Data Center Douala",
-    eventDate: "19/04/2026",
-    createdAt: "04/08/2026 16:34",
-    technician: "Jean-Marc Bidjocka",
-    problem: "Batterie de secours déchargée",
-    status: "in-progress",
-    duration: "0 min",
-  },
-  {
-    id: "7",
-    siteName: "Poste Bafoussam",
-    eventDate: "05/08/2026",
-    createdAt: "02/08/2026 16:34",
-    technician: "Paul Etogo",
-    problem: "Défaut d'isolement sur ligne HT",
-    actions: "Isolation du défaut, réparation du câble, test d'isolement",
-    parts: "Carte électronique de contrôle",
-    status: "resolved",
-    duration: "2h 10min",
-  },
-  {
-    id: "8",
-    siteName: "Poste Maroua",
-    eventDate: "30/07/2026",
-    createdAt: "30/07/2026 16:34",
-    technician: "Samuel Foka",
-    problem: "Disjoncteur déclenché suite à surcharge",
-    actions: "Isolation du défaut, réparation du câble, test d'isolement",
-    parts: "Carte électronique de contrôle",
-    status: "resolved",
-    duration: "2h 28min",
-  },
-  {
-    id: "9",
-    siteName: "Poste Kribi",
-    eventDate: "29/07/2026",
-    createdAt: "29/07/2026 16:34",
-    technician: "Jean-Marc Bidjocka",
-    problem: "Perte de communication avec le site",
-    actions: "Diagnostic complet du tableau, remplacement du composant défectueux",
-    parts: "Relais de protection",
-    status: "resolved",
-    duration: "3h 29min",
-  },
-  {
-    id: "10",
-    siteName: "Poste Ngaoundéré",
-    eventDate: "28/07/2026",
-    createdAt: "28/07/2026 16:34",
-    technician: "Paul Etogo",
-    problem: "Surtension transitoire enregistrée",
-    actions: "Vérification des connexions, resserrage des bornes, test de mise sous tension",
-    parts: "Batterie 12V 100Ah",
-    status: "closed",
-    duration: "2h 35min",
-  },
-  {
-    id: "11",
-    siteName: "Poste Centre-Yaoundé",
-    eventDate: "25/07/2026",
-    createdAt: "25/07/2026 16:34",
-    technician: "Abdoulaye Njoya",
-    problem: "Batterie de secours déchargée",
-    actions: "Réinitialisation des protections, calibrage des relais, remise en service",
-    parts: "Câble 16mm²",
-    status: "closed",
-    duration: "2h 59min",
-  },
-  {
-    id: "12",
-    siteName: "Poste Hippodrome",
-    eventDate: "22/07/2026",
-    createdAt: "22/07/2026 16:34",
-    technician: "Marie Tchatcho",
-    problem: "Défaut d'isolement sur ligne HT",
-    actions: "Remplacement de la carte de communication, reconfiguration des paramètres",
-    parts: "Aucune pièce remplacée",
-    status: "closed",
-    duration: "1h 12min",
-  },
-];
+import { api, InterventionTicket, InterventionStatus } from "@/services";
 
 export default function InterventionTicketsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | InterventionStatus>("all");
-  const [tickets, setTickets] = useState<InterventionTicket[]>(MOCK_TICKETS);
+  const [tickets, setTickets] = useState<InterventionTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getStatusLabel = (status: InterventionStatus) => {
-    switch (status) {
-      case "open":
-        return "Ouverte";
-      case "in-progress":
-        return "En cours";
-      case "resolved":
-        return "Résolue";
-      case "closed":
-        return "Clôturée";
+  // Charger les fiches d'intervention depuis NestJS / PostgreSQL
+  useEffect(() => {
+    async function fetchTickets() {
+      try {
+        setLoading(true);
+        const data = await api.getInterventions();
+        setTickets(data);
+      } catch (err: any) {
+        console.error("Erreur de chargement des interventions :", err);
+        setError("Impossible de charger les fiches d'intervention.");
+      } finally {
+        setLoading(false);
+      }
     }
-  };
 
-  const getStatusColor = (status: InterventionStatus) => {
-    switch (status) {
-      case "open":
-        return "bg-[#FEF3C7] text-[#F2751F]";
-      case "in-progress":
-        return "bg-[#FFEDD5] text-[#F2751F]";
-      case "resolved":
-        return "bg-[#D1FAE5] text-[#16A34A]";
-      case "closed":
-        return "bg-[#F3F4F6] text-[#8A8478]";
-    }
-  };
+    fetchTickets();
+  }, []);
 
   const getIconBg = (status: InterventionStatus) => {
     switch (status) {
@@ -223,11 +62,50 @@ export default function InterventionTicketsPage() {
     return ticket.status === statusFilter;
   });
 
-  const handleStatusChange = (ticketId: string, newStatus: InterventionStatus) => {
-    setTickets(tickets.map(t => t.id === ticketId ? { ...t, status: newStatus } : t));
+  // Mise à jour synchrone de l'UI & asynchrone sur le Backend NestJS
+  const handleStatusChange = async (ticketId: string, newStatus: InterventionStatus) => {
+    // 1. Mise à jour optimiste du state local
+    setTickets((prev) =>
+      prev.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t))
+    );
+
+    try {
+      // 2. Appel de l'API REST
+      await api.updateIntervention(ticketId, { status: newStatus });
+    } catch (err) {
+      console.error(`Erreur lors de la mise à jour de l'intervention #${ticketId}:`, err);
+      // Optionnel : Recharger la liste en cas d'erreur de réseau
+      const freshData = await api.getInterventions();
+      setTickets(freshData);
+    }
+  };
+
+  const handleDelete = async (ticketId: string) => {
+    if (!confirm("Voulez-vous vraiment supprimer cette fiche d'intervention ?")) return;
+
+    setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+
+    try {
+      await api.deleteIntervention(ticketId);
+    } catch (err) {
+      console.error(`Erreur de suppression de l'intervention #${ticketId}:`, err);
+      const freshData = await api.getInterventions();
+      setTickets(freshData);
+    }
   };
 
   const renderTicket = (ticket: InterventionTicket) => {
+    const siteDisplayName = ticket.siteName ?? ticket.site?.name ?? "Site non spécifié";
+    const formattedCreatedAt = ticket.createdAt
+      ? new Date(ticket.createdAt).toLocaleDateString("fr-FR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "Date inconnue";
+
     return (
       <div
         key={ticket.id}
@@ -253,13 +131,17 @@ export default function InterventionTicketsPage() {
             <div className="flex items-start justify-between gap-4 mb-2">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-[#1F2937]">{ticket.siteName}</h3>
-                  <span className="px-2 py-0.5 bg-[#E8E2D8] rounded text-xs text-[#8A8478]">
-                    Évt: {ticket.eventDate}
-                  </span>
+                  <h3 className="font-semibold text-[#1F2937]">{siteDisplayName}</h3>
+                  {ticket.eventDate && (
+                    <span className="px-2 py-0.5 bg-[#E8E2D8] rounded text-xs text-[#8A8478]">
+                      Évt: {ticket.eventDate}
+                    </span>
+                  )}
                 </div>
                 <p className="text-sm text-[#8A8478]">
-                  {ticket.technician} • {ticket.createdAt} • {ticket.duration}
+                  • Technicien: {ticket.technician || "Non assigné"} <br />
+                  • Créée le: {formattedCreatedAt} <br />
+                  • Durée: {ticket.duration || "0 min"}
                 </p>
               </div>
 
@@ -271,7 +153,7 @@ export default function InterventionTicketsPage() {
                     handleStatusChange(ticket.id, value)
                   }
                 >
-                  <SelectTrigger className="w-[120px] h-8">
+                  <SelectTrigger className="w-[130px] h-8">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -285,7 +167,12 @@ export default function InterventionTicketsPage() {
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Pencil className="w-4 h-4 text-[#8A8478]" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => handleDelete(ticket.id)}
+                >
                   <Trash2 className="w-4 h-4 text-[#DC2626]" />
                 </Button>
               </div>
@@ -296,7 +183,7 @@ export default function InterventionTicketsPage() {
               <span className="font-medium">Problème:</span> {ticket.problem}
             </p>
 
-            {/* Actions et pièces (pour résolues/clôturées) */}
+            {/* Actions et pièces */}
             {ticket.actions && (
               <p className="text-sm text-[#1F2937] mb-2">
                 <span className="font-medium">Actions:</span> {ticket.actions}
@@ -328,7 +215,7 @@ export default function InterventionTicketsPage() {
 
       {/* Filtres de statut */}
       <div className="mb-6">
-        <div className="inline-flex bg-white border border-[#E8E2D8] rounded-lg p-1">
+        <div className="inline-flex bg-white border border-[#E8E2D8] rounded-lg p-1 flex-wrap gap-1">
           <button
             onClick={() => setStatusFilter("all")}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -382,10 +269,25 @@ export default function InterventionTicketsPage() {
         </div>
       </div>
 
-      {/* Liste des fiches */}
-      <div className="space-y-4">
-        {filteredTickets.map(renderTicket)}
-      </div>
+      {/* État de chargement / Erreur / Liste */}
+      {loading ? (
+        <div className="flex items-center justify-center p-12 bg-white border border-[#E8E2D8] rounded-xl">
+          <Loader2 className="w-6 h-6 animate-spin text-[#F2751F] mr-2" />
+          <span className="text-[#8A8478]">Chargement des interventions...</span>
+        </div>
+      ) : error ? (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl">
+          {error}
+        </div>
+      ) : filteredTickets.length === 0 ? (
+        <div className="p-8 text-center bg-white border border-[#E8E2D8] rounded-xl text-[#8A8478]">
+          Aucune fiche d'intervention ne correspond au filtre sélectionné.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredTickets.map(renderTicket)}
+        </div>
+      )}
     </div>
   );
 }

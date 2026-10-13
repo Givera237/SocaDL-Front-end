@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Clock, Activity, TrendingUp, Zap, AlertTriangle } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/header";
@@ -11,9 +11,17 @@ import { ZoneSelector } from "@/components/dashboard/zone-selector";
 import { SiteMap, type Site } from "@/components/dashboard/site-map";
 import { ActivityFeed, type ActivityEvent } from "@/components/dashboard/activity-feed";
 import { TrendChart, type TrendPoint } from "@/components/dashboard/trend-chart";
+import { useLiveTelemetry } from "@/hooks/use-live-telemetry";
 
-// TODO: remplacer par les données réelles issues de l'API une fois l'intégration branchée
-const MOCK_SITES: Site[] = [
+// TODO: remplacer status/weight par les données réelles de GET /dashboard/summary
+// une fois l'intégration REST branchée — ces ids DOIVENT rester synchronisés
+// avec le registre de sites backend (src/common/site-registry.ts) et avec le
+// DEVICE_ID de chaque ESP32 (config.h), sinon la télémétrie live ne se
+// raccroche à aucun marqueur sur la carte.
+const MOCK_SITES_BASE: Omit<
+  Site,
+  "tensionV" | "frequencyHz" | "currentKa" | "thdPct" | "temperatureC" | "loadPct" | "lastUpdate"
+>[] = [
   { id: "yaounde", name: "Yaoundé", lat: 3.848, lng: 11.502, status: "online", weight: 12 },
   { id: "douala", name: "Douala", lat: 4.0511, lng: 9.7679, status: "online", weight: 14 },
   { id: "bamenda", name: "Bamenda", lat: 5.9631, lng: 10.1591, status: "online", weight: 9 },
@@ -29,6 +37,30 @@ const MOCK_TREND: TrendPoint[] = [];
 export default function DashboardPage() {
   const [period, setPeriod] = useState<Period>("7d");
   const [zone, setZone] = useState("all");
+  const { telemetryBySite, onlineBySite } = useLiveTelemetry();
+
+  // Fusionne la base mockée avec la dernière mesure live reçue par WebSocket,
+  // site par site. Un site jamais vu côté MQTT garde simplement ses champs
+  // de télémétrie undefined (tooltip affiche "Pas encore de données live").
+  const sites: Site[] = useMemo(
+    () =>
+      MOCK_SITES_BASE.map((base) => {
+        const live = telemetryBySite[base.id];
+        const online = onlineBySite[base.id];
+        return {
+          ...base,
+          status: online === undefined ? base.status : online ? "online" : "offline",
+          tensionV: live?.tensionV,
+          frequencyHz: live?.frequencyHz,
+          currentKa: live?.currentKa,
+          thdPct: live?.thdPct,
+          temperatureC: live?.temperatureC,
+          loadPct: live?.loadPct,
+          lastUpdate: live?.timestamp,
+        };
+      }),
+    [telemetryBySite, onlineBySite],
+  );
 
   return (
     <div className="space-y-6">
@@ -68,8 +100,8 @@ export default function DashboardPage() {
         />
         <KpiCard
           label="SITES EN LIGNE"
-          value="0/12"
-          caption="12 hors ligne"
+          value={`${sites.filter((s) => s.status === "online").length}/${sites.length}`}
+          caption={`${sites.filter((s) => s.status !== "online").length} hors ligne`}
           icon={Zap}
           tone="orange"
         />
@@ -84,7 +116,7 @@ export default function DashboardPage() {
 
       {/* Carte + mesures instantanées */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-        <SiteMap sites={MOCK_SITES} />
+        <SiteMap sites={sites} />
         <div className="grid grid-cols-2 gap-4">
           <MinMaxCard label="TENSION" unit="V" />
           <MinMaxCard label="FRÉQUENCE" unit="Hz" />
