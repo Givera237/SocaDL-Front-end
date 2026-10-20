@@ -22,7 +22,8 @@ const MOCK_SITES_BASE: Omit<
   Site,
   "tensionV" | "frequencyHz" | "currentKa" | "thdPct" | "temperatureC" | "loadPct" | "lastUpdate"
 >[] = [
-  { id: "yaounde", name: "Yaoundé", lat: 3.848, lng: 11.502, status: "online", weight: 12 },
+  // ⚡ Remplacez "yaounde" par l'ID réel émis par l'ESP32
+  { id: "ESP32-5CD57CA99B2", name: "Yaoundé", lat: 3.848, lng: 11.502, status: "online", weight: 12 },
   { id: "douala", name: "Douala", lat: 4.0511, lng: 9.7679, status: "online", weight: 14 },
   { id: "bamenda", name: "Bamenda", lat: 5.9631, lng: 10.1591, status: "online", weight: 9 },
   { id: "bamenda-2", name: "Bamenda — Poste 2", lat: 5.92, lng: 10.16, status: "online", weight: 7 },
@@ -30,7 +31,6 @@ const MOCK_SITES_BASE: Omit<
   { id: "ebolowa", name: "Ébolowa", lat: 2.9, lng: 11.15, status: "online", weight: 8 },
   { id: "bertoua", name: "Bertoua", lat: 6.5, lng: 13.68, status: "online", weight: 6 },
 ];
-
 const MOCK_EVENTS: ActivityEvent[] = [];
 const MOCK_TREND: TrendPoint[] = [];
 

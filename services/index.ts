@@ -96,7 +96,6 @@ export interface EvolutionData {
   saidi: number;
   saifi: number;
 }
-
 export interface PerformanceIndicator {
   label: string;
   value: number;
@@ -107,11 +106,17 @@ export interface PerformanceIndicator {
   description: string;
   status: "excellent" | "good" | "warning";
   statusLabel: string;
-  progress: number; // 0-100
+  progress: number;
   isPercentage?: boolean;
   inverseProgress?: boolean;
 }
 
+export interface PerformanceResponse {
+  indicators: PerformanceIndicator[];
+  ytdOutages: number;
+  totalMinutesClient: number;
+  globalScore: number;
+}
 export type UserRole = "Administrateur" | "Technicien" | "Lecture ARSEL";
 export interface User {
   id: string;
@@ -196,7 +201,9 @@ export const api = {
     apiClient.get<EvolutionData[]>("/reports/evolution", { period, zoneId }),
 
   // 7. Tableau de performance
-  getPerformance: () => apiClient.get<{ indicators: PerformanceIndicator[], ytdOutages: number, totalMinutesClient: number, globalScore: number }>("/performance"),
+  // 7. Tableau de performance
+  getPerformance: () => apiClient.get<PerformanceResponse>("/performance"),
+  //getPerformance: () => apiClient.get<{ indicators: PerformanceIndicator[], ytdOutages: number, totalMinutesClient: number, globalScore: number }>("/performance"),
 
   // 8. Paramètres (Utilisateurs)
   getUsers: () => apiClient.get<User[]>("/users"),
@@ -220,12 +227,12 @@ export const api = {
     apiClient.delete<void>(`/interventions/${id}`),
 
 
-   // 6. Rapports
+  /* // 6. Rapports
   getZoneStats: (period: string = "30d") =>
     apiClient.get<ZoneReport[]>("/reports/zones/stats", { period }),
 
   getEvolutionData: (period: string = "30d", zoneId?: string) =>
     apiClient.get<EvolutionData[]>("/reports/evolution", { period, zoneId }),
-
+*/
 
 };
