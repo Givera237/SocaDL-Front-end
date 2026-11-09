@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Clock, Activity, TrendingUp, Zap, AlertTriangle } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/header";
@@ -22,26 +23,25 @@ const MOCK_SITES_BASE: Omit<
   Site,
   "tensionV" | "frequencyHz" | "currentKa" | "thdPct" | "temperatureC" | "loadPct" | "lastUpdate"
 >[] = [
-  // ⚡ Remplacez "yaounde" par l'ID réel émis par l'ESP32
   { id: "ESP32-5CD57CA99B2", name: "Yaoundé", lat: 3.848, lng: 11.502, status: "online", weight: 12 },
   { id: "douala", name: "Douala", lat: 4.0511, lng: 9.7679, status: "online", weight: 14 },
   { id: "bamenda", name: "Bamenda", lat: 5.9631, lng: 10.1591, status: "online", weight: 9 },
-  { id: "bamenda-2", name: "Bamenda — Poste 2", lat: 5.92, lng: 10.16, status: "online", weight: 7 },
+  { id: "bamenda-2", name: "Bamenda — Poste 2", lat: 5.92, lng: 10.16, status: "warning", weight: 7 },
   { id: "garoua", name: "Garoua", lat: 9.3017, lng: 13.3921, status: "online", weight: 10 },
-  { id: "ebolowa", name: "Ébolowa", lat: 2.9, lng: 11.15, status: "online", weight: 8 },
+  { id: "ebolowa", name: "Ébolowa", lat: 2.9, lng: 11.15, status: "offline", weight: 8 },
   { id: "bertoua", name: "Bertoua", lat: 6.5, lng: 13.68, status: "online", weight: 6 },
 ];
+
 const MOCK_EVENTS: ActivityEvent[] = [];
 const MOCK_TREND: TrendPoint[] = [];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [period, setPeriod] = useState<Period>("7d");
   const [zone, setZone] = useState("all");
   const { telemetryBySite, onlineBySite } = useLiveTelemetry();
 
-  // Fusionne la base mockée avec la dernière mesure live reçue par WebSocket,
-  // site par site. Un site jamais vu côté MQTT garde simplement ses champs
-  // de télémétrie undefined (tooltip affiche "Pas encore de données live").
+  // Fusionne la base mockée avec la dernière mesure live reçue par WebSocket
   const sites: Site[] = useMemo(
     () =>
       MOCK_SITES_BASE.map((base) => {
@@ -62,6 +62,11 @@ export default function DashboardPage() {
     [telemetryBySite, onlineBySite],
   );
 
+  // Handler de navigation vers la fiche détaillée du site
+  const handleSiteClick = (siteId: string) => {
+    router.push(`/sites/${siteId}`);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -78,7 +83,7 @@ export default function DashboardPage() {
       {/* Indicateurs clés */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <KpiCard
-          label="SAIDI (DEPUIS LE 1ER JA...)"
+          label="SAIDI (DEPUIS LE 1ER JANV.)"
           value="60.3 min/ab."
           caption="Cumul annuel IEEE 1366"
           icon={Clock}
@@ -116,7 +121,8 @@ export default function DashboardPage() {
 
       {/* Carte + mesures instantanées */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
-        <SiteMap sites={sites} />
+        {/* La prop onSiteClick est maintenant passée au composant SiteMap */}
+        <SiteMap sites={sites} onSiteClick={handleSiteClick} />
         <div className="grid grid-cols-2 gap-4">
           <MinMaxCard label="TENSION" unit="V" />
           <MinMaxCard label="FRÉQUENCE" unit="Hz" />
