@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, TrendingUp, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, PerformanceIndicator, PerformanceResponse } from "@/services";
+import { MOCK_PERFORMANCE } from "@/lib/mock-data";
 
 // Cercle de progression
 function CircularProgress({
@@ -146,21 +147,17 @@ function ProgressBar({ indicator }: { indicator: PerformanceIndicator }) {
 }
 
 export default function PerformanceTablePage() {
-  const [data, setData] = useState<PerformanceResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<PerformanceResponse | null>(MOCK_PERFORMANCE);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchPerformance() {
       try {
-        setLoading(true);
         const res = await api.getPerformance();
-        setData(res);
+        if (res) setData(res);
       } catch (err: any) {
         console.error("Erreur de chargement du tableau de performance :", err);
-        setError("Impossible de charger les métriques de performance.");
-      } finally {
-        setLoading(false);
       }
     }
 

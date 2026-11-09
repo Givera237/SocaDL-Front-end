@@ -28,7 +28,7 @@ function formatMetric(value: number | undefined, unit: string, decimals = 1) {
   return value === undefined ? "—" : `${value.toFixed(decimals)} ${unit}`;
 }
 
-export function LeafletMapInner({
+export default function LeafletMapInner({
   sites,
   center = [5.5, 12.7], // Centre approximatif du Cameroun
   zoom = 6,

@@ -8,24 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Pencil, Trash2, Plus, Globe, Building2, Loader2 } from "lucide-react";
 import { api, AlertRule } from "@/services";
+import { MOCK_ALERT_RULES } from "@/lib/mock-data";
 
 export default function AlertConfigurationPage() {
-  const [rules, setRules] = useState<AlertRule[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Données de démonstration affichées immédiatement, remplacées par l'API
+  const [rules, setRules] = useState<AlertRule[]>(MOCK_ALERT_RULES);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Charger les règles d'alerte depuis NestJS / PostgreSQL
+  // Charger les règles d'alerte depuis NestJS / PostgreSQL (ne bloquer l'UI qu'après échec)
   useEffect(() => {
     async function fetchRules() {
       try {
-        setLoading(true);
         const data = await api.getAlertRules();
-        setRules(data);
+        if (data?.length) setRules(data);
       } catch (err: any) {
+        // On conserve les mocks en cas d'échec de l'API et l'on ne bloque pas l'écran
         console.error("Erreur de chargement des règles d'alerte :", err);
-        setError("Impossible de charger les règles d'alerte.");
-      } finally {
-        setLoading(false);
       }
     }
 

@@ -190,8 +190,10 @@ export const api = {
 
   // 5. Alertes
   getAlertRules: () => apiClient.get<AlertRule[]>("/alert-rules"),
-  updateAlertRule: (id: string, data: Partial<AlertRule>) => 
+  updateAlertRule: (id: string, data: Partial<AlertRule>) =>
     apiClient.put<AlertRule>(`/alert-rules/${id}`, data),
+  deleteAlertRule: (id: string) =>
+    apiClient.delete<void>(`/alert-rules/${id}`),
 
   // 6. Rapports & Statistiques Zones
   // 6. Rapports & Statistiques Zones

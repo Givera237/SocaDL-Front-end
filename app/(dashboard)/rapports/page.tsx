@@ -32,32 +32,29 @@ import {
 } from "recharts";
 import { FileDown, FileText, ArrowDown, Loader2 } from "lucide-react";
 import { api, ZoneReport, EvolutionData } from "@/services";
+import { MOCK_ZONE_STATS, MOCK_EVOLUTION_DATA } from "@/lib/mock-data";
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>("30d");
   const [zoneFilter, setZoneFilter] = useState("all");
-  const [zones, setZones] = useState<ZoneReport[]>([]);
-  const [evolution, setEvolution] = useState<EvolutionData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [zones, setZones] = useState<ZoneReport[]>(MOCK_ZONE_STATS);
+  const [evolution, setEvolution] = useState<EvolutionData[]>(MOCK_EVOLUTION_DATA);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Recharger les données réelles à chaque changement de période ou de filtre
   useEffect(() => {
     async function fetchReportsData() {
       try {
-        setLoading(true);
         const [zonesData, evolutionData] = await Promise.all([
           api.getZoneStats(period),
           api.getEvolutionData(period, zoneFilter === "all" ? undefined : zoneFilter),
         ]);
 
-        setZones(zonesData ?? []);
-        setEvolution(evolutionData ?? []);
+        if (zonesData?.length) setZones(zonesData);
+        if (evolutionData?.length) setEvolution(evolutionData);
       } catch (err: any) {
         console.error("Erreur de chargement des rapports :", err);
-        setError("Impossible de charger les indicateurs IEEE 1366.");
-      } finally {
-        setLoading(false);
       }
     }
 

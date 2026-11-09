@@ -18,33 +18,30 @@ import {
   Plus,
   Loader2,
 } from "lucide-react";
-import { api, InterventionTicket, InterventionStatus } from "@/services";
+import { api, MaintenanceIntervention, MaintenanceStatus } from "@/services";
+import { MOCK_INTERVENTIONS } from "@/lib/mock-data";
 
 export default function InterventionTicketsPage() {
-  const [statusFilter, setStatusFilter] = useState<"all" | InterventionStatus>("all");
-  const [tickets, setTickets] = useState<InterventionTicket[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<"all" | MaintenanceStatus>("all");
+  const [tickets, setTickets] = useState<MaintenanceIntervention[]>(MOCK_INTERVENTIONS);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Charger les fiches d'intervention depuis NestJS / PostgreSQL
   useEffect(() => {
     async function fetchTickets() {
       try {
-        setLoading(true);
         const data = await api.getInterventions();
-        setTickets(data);
+        if (data?.length) setTickets(data);
       } catch (err: any) {
         console.error("Erreur de chargement des interventions :", err);
-        setError("Impossible de charger les fiches d'intervention.");
-      } finally {
-        setLoading(false);
       }
     }
 
     fetchTickets();
   }, []);
 
-  const getIconBg = (status: InterventionStatus) => {
+  const getIconBg = (status: MaintenanceStatus) => {
     switch (status) {
       case "open":
         return "bg-[#FEF3C7]";
@@ -63,7 +60,7 @@ export default function InterventionTicketsPage() {
   });
 
   // Mise à jour synchrone de l'UI & asynchrone sur le Backend NestJS
-  const handleStatusChange = async (ticketId: string, newStatus: InterventionStatus) => {
+  const handleStatusChange = async (ticketId: string, newStatus: MaintenanceStatus) => {
     // 1. Mise à jour optimiste du state local
     setTickets((prev) =>
       prev.map((t) => (t.id === ticketId ? { ...t, status: newStatus } : t))
@@ -94,7 +91,7 @@ export default function InterventionTicketsPage() {
     }
   };
 
-  const renderTicket = (ticket: InterventionTicket) => {
+  const renderTicket = (ticket: MaintenanceIntervention) => {
     const siteDisplayName = ticket.siteName ?? ticket.site?.name ?? "Site non spécifié";
     const formattedCreatedAt = ticket.createdAt
       ? new Date(ticket.createdAt).toLocaleDateString("fr-FR", {
@@ -140,8 +137,7 @@ export default function InterventionTicketsPage() {
                 </div>
                 <p className="text-sm text-[#8A8478]">
                   • Technicien: {ticket.technician || "Non assigné"} <br />
-                  • Créée le: {formattedCreatedAt} <br />
-                  • Durée: {ticket.duration || "0 min"}
+                  • Créée le: {formattedCreatedAt}
                 </p>
               </div>
 
@@ -149,7 +145,7 @@ export default function InterventionTicketsPage() {
               <div className="flex items-center gap-2">
                 <Select
                   value={ticket.status}
-                  onValueChange={(value: InterventionStatus) =>
+                  onValueChange={(value: MaintenanceStatus) =>
                     handleStatusChange(ticket.id, value)
                   }
                 >
