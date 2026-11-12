@@ -23,28 +23,8 @@ import {
 } from "@/components/ui/table";
 import { UserPlus, Users, Clock, Mail } from "lucide-react";
 
-// Types
-type UserRole = "Administrateur" | "Technicien" | "Lecture ARSEL";
-
-interface User {
-  id: string;
-  email: string;
-  role: UserRole;
-}
-
-// Données mockées
-const MOCK_USERS: User[] = [
-  {
-    id: "1",
-    email: "franck.nzokou@facsciences-uy1.cm",
-    role: "Administrateur",
-  },
-  {
-    id: "2",
-    email: "giveraango@gmail.com",
-    role: "Administrateur",
-  },
-];
+import { User, UserRole } from "@/services";
+import { MOCK_USERS } from "@/lib/mock-data";
 
 export default function ParametersPage() {
   const [users, setUsers] = useState<User[]>(MOCK_USERS);

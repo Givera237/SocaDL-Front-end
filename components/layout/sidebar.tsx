@@ -17,6 +17,7 @@ import {
   Zap,
   LogOut,
 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -65,7 +66,11 @@ export function Sidebar({
   onLogout?: () => void;
 }) {
   const pathname = usePathname();
-  const horodatage = formatDateHeure(new Date());
+  const [horodatage, setHorodatage] = useState("");
+
+  useEffect(() => {
+    setHorodatage(formatDateHeure(new Date()));
+  }, []);
 
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-[#E8E2D8] bg-[#FAF7F2]">

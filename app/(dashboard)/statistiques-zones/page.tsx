@@ -16,25 +16,22 @@ import {
 import { AlertTriangle, CheckCircle2, TrendingUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, ZoneStats } from "@/services";
+import { MOCK_ZONE_STATS } from "@/lib/mock-data";
 
 export default function ZoneStatisticsPage() {
   const [period, setPeriod] = useState<Period>("30d");
-  const [zones, setZones] = useState<ZoneStats[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [zones, setZones] = useState<ZoneStats[]>(MOCK_ZONE_STATS);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Charger les statistiques des zones depuis le backend NestJS
   useEffect(() => {
     async function fetchZoneStats() {
       try {
-        setLoading(true);
         const data = await api.getZoneStats(period);
-        setZones(data ?? []);
+        if (data?.length) setZones(data);
       } catch (err: any) {
         console.error("Erreur de chargement des statistiques de zones :", err);
-        setError("Impossible de charger les statistiques de zones.");
-      } finally {
-        setLoading(false);
       }
     }
 

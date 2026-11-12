@@ -4,7 +4,9 @@ import { io, Socket } from "socket.io-client";
 const SOCKET_URL = "https://socadel-back-end.onrender.com";
 let socket: Socket | null = null;
 
-export function getSocket(): Socket {
+export function getSocket(): Socket | null {
+  if (typeof window === "undefined") return null;
+
   if (!socket) {
     console.log("[Socket] Initialisation du socket vers :", SOCKET_URL);
 

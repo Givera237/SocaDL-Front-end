@@ -36,6 +36,7 @@ import {
   MaintenanceStatus,
   MaintenanceType,
 } from "@/services";
+import { MOCK_INTERVENTIONS } from "@/lib/mock-data";
 
 // Helpers
 const getPriorityBadge = (priority?: MaintenancePriority) => {
@@ -85,22 +86,18 @@ const getTypeLabel = (type?: MaintenanceType): string => {
 
 export default function MaintenancePage() {
   const [activeFilter, setActiveFilter] = useState<string>("toutes");
-  const [interventions, setInterventions] = useState<MaintenanceIntervention[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [interventions, setInterventions] = useState<MaintenanceIntervention[]>(MOCK_INTERVENTIONS);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Charger les données depuis NestJS
   useEffect(() => {
     async function fetchInterventions() {
       try {
-        setLoading(true);
         const data = await api.getInterventions();
-        setInterventions(data);
+        if (data?.length) setInterventions(data);
       } catch (err: any) {
         console.error("Erreur de chargement des interventions :", err);
-        setError("Impossible de charger les données de maintenance.");
-      } finally {
-        setLoading(false);
       }
     }
 

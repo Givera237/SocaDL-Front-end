@@ -13,26 +13,23 @@ import {
 } from "@/components/ui/select";
 import { Pencil, Trash2, Plus, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { api, Equipment } from "@/services";
+import { MOCK_EQUIPMENT } from "@/lib/mock-data";
 
 export default function InventoryPage() {
   const [siteFilter, setSiteFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [equipments, setEquipments] = useState<Equipment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [equipments, setEquipments] = useState<Equipment[]>(MOCK_EQUIPMENT);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Charger les données réelles depuis NestJS
   useEffect(() => {
     async function fetchInventory() {
       try {
-        setLoading(true);
         const data = await api.getEquipment();
-        setEquipments(data);
+        if (data?.length) setEquipments(data);
       } catch (err: any) {
         console.error("Erreur de chargement :", err);
-        setError("Impossible de charger l'inventaire matériel.");
-      } finally {
-        setLoading(false);
       }
     }
 

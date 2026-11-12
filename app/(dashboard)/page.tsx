@@ -10,9 +10,10 @@ import { MinMaxCard } from "@/components/dashboard/min-max-card";
 import { PeriodFilter, type Period } from "@/components/dashboard/period-filter";
 import { ZoneSelector } from "@/components/dashboard/zone-selector";
 import { SiteMap, type Site } from "@/components/dashboard/site-map";
-import { ActivityFeed, type ActivityEvent } from "@/components/dashboard/activity-feed";
-import { TrendChart, type TrendPoint } from "@/components/dashboard/trend-chart";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { TrendChart } from "@/components/dashboard/trend-chart";
 import { useLiveTelemetry } from "@/hooks/use-live-telemetry";
+import { MOCK_ACTIVITY_EVENTS, MOCK_TREND_DATA, MOCK_MINMAX_CARDS } from "@/lib/mock-data";
 
 // TODO: remplacer status/weight par les données réelles de GET /dashboard/summary
 // une fois l'intégration REST branchée — ces ids DOIVENT rester synchronisés
@@ -31,9 +32,6 @@ const MOCK_SITES_BASE: Omit<
   { id: "ebolowa", name: "Ébolowa", lat: 2.9, lng: 11.15, status: "offline", weight: 8 },
   { id: "bertoua", name: "Bertoua", lat: 6.5, lng: 13.68, status: "online", weight: 6 },
 ];
-
-const MOCK_EVENTS: ActivityEvent[] = [];
-const MOCK_TREND: TrendPoint[] = [];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -124,17 +122,16 @@ export default function DashboardPage() {
         {/* La prop onSiteClick est maintenant passée au composant SiteMap */}
         <SiteMap sites={sites} onSiteClick={handleSiteClick} />
         <div className="grid grid-cols-2 gap-4">
-          <MinMaxCard label="TENSION" unit="V" />
-          <MinMaxCard label="FRÉQUENCE" unit="Hz" />
-          <MinMaxCard label="PUISSANCE ACTIVE" unit="kW" />
-          <MinMaxCard label="FACTEUR DE PUISSANCE" />
+          {MOCK_MINMAX_CARDS.map((card) => (
+            <MinMaxCard key={card.label} label={card.label} unit={card.unit} max={card.max} min={card.min} />
+          ))}
         </div>
       </div>
 
       {/* Flux d'activité + tendance */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ActivityFeed events={MOCK_EVENTS} />
-        <TrendChart data={MOCK_TREND} />
+        <ActivityFeed events={MOCK_ACTIVITY_EVENTS} />
+        <TrendChart data={MOCK_TREND_DATA} />
       </div>
     </div>
   );

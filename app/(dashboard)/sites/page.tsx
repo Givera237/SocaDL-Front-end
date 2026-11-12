@@ -24,37 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// TODO(api): remplacer par un appel réel (ex: GET /api/sites) une fois le
-// branchement API effectué. Structure calquée sur celle utilisée pour
-// MOCK_SITES / MOCK_EVENTS / MOCK_TREND dans le Tableau de bord.
-interface SiteRow {
-  id: string;
-  name: string;
-  code: string;
-  zone: string;
-  subscribers: number;
-  tensionV: number;
-  frequencyHz: number;
-  status: SiteStatus;
-  lastCommDays: number;
-}
-
-const MOCK_SITES: SiteRow[] = [
-  { id: "1", name: "Poste Ngaoundéré", code: "NGR-CTR-01", zone: "Adamaoua", subscribers: 4100, tensionV: 199.3, frequencyHz: 49.78, status: "offline", lastCommDays: 41 },
-  { id: "2", name: "Poste Maroua", code: "MRA-CTR-01", zone: "Extrême-Nord", subscribers: 3800, tensionV: 229.2, frequencyHz: 50.06, status: "offline", lastCommDays: 41 },
-  { id: "3", name: "Poste Kribi", code: "KRB-CTR-01", zone: "Sud", subscribers: 3100, tensionV: 231.9, frequencyHz: 50.01, status: "offline", lastCommDays: 41 },
-  { id: "4", name: "Poste Hippodrome", code: "YDE-HIP-02", zone: "Yaoundé", subscribers: 8200, tensionV: 228.9, frequencyHz: 50.01, status: "offline", lastCommDays: 41 },
-  { id: "5", name: "Poste Garoua", code: "GAR-CTR-01", zone: "Nord", subscribers: 4300, tensionV: 230.3, frequencyHz: 50.06, status: "offline", lastCommDays: 41 },
-  { id: "6", name: "Poste Centre-Yaoundé", code: "YDE-CTR-01", zone: "Yaoundé", subscribers: 12500, tensionV: 233.5, frequencyHz: 50.04, status: "offline", lastCommDays: 41 },
-  { id: "7", name: "Poste Bonanjo", code: "DLA-BNJ-01", zone: "Douala", subscribers: 18000, tensionV: 234.4, frequencyHz: 50.08, status: "offline", lastCommDays: 41 },
-  { id: "8", name: "Poste Bamenda", code: "BDA-CTR-01", zone: "Nord-Ouest", subscribers: 5200, tensionV: 227.4, frequencyHz: 50.07, status: "offline", lastCommDays: 41 },
-  { id: "9", name: "Poste Bafoussam", code: "BFO-CTR-01", zone: "Ouest", subscribers: 6500, tensionV: 225.8, frequencyHz: 49.96, status: "offline", lastCommDays: 41 },
-  { id: "10", name: "Poste Akwa", code: "DLA-AKW-02", zone: "Douala", subscribers: 9500, tensionV: 200.9, frequencyHz: 49.77, status: "offline", lastCommDays: 41 },
-  { id: "11", name: "Data Center Douala", code: "DLA-DC-01", zone: "Douala", subscribers: 1500, tensionV: 232.7, frequencyHz: 50.03, status: "offline", lastCommDays: 41 },
-  // La capture d'écran mentionne 12 sites mais le 12e est tronqué en bas de
-  // liste (visible : "Centre Hospitalier Universit...") — à compléter avec
-  // les données réelles lors du branchement API.
-];
+import { MOCK_SITES } from "@/lib/mock-data";
 
 const TOTAL_SITES_LABEL = "12 sites supervisés sur le territoire";
 

@@ -20,6 +20,7 @@ export function useLiveTelemetry() {
 
   useEffect(() => {
     const socket = getSocket();
+    if (!socket) return;
 
     // 1. Log de statut de connexion au socket
     console.log("[useLiveTelemetry] Socket récupéré. Connecté ?", socket.connected);
